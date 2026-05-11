@@ -546,6 +546,7 @@ do
       -- Jump to the definition of the word under your cursor.
       -- This is where a variable was first declared, or where a function is defined, etc.
       -- To jump back, press <C-t>.
+      vim.keymap.set('n', 'gd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
       vim.keymap.set('n', 'grd', builtin.lsp_definitions, { buffer = buf, desc = '[G]oto [D]efinition' })
 
       -- Fuzzy find all the symbols in your current document.
@@ -709,7 +710,6 @@ do
     -- But for many setups, the LSP (`ts_ls`) will work just fine
     ts_ls = {},
     tailwindcss = {},
-    csharp_ls = {},
 
     stylua = {}, -- Used to format Lua code
 
@@ -753,11 +753,17 @@ do
     gh 'mason-org/mason.nvim',
     gh 'mason-org/mason-lspconfig.nvim',
     gh 'WhoIsSethDaniel/mason-tool-installer.nvim',
+    gh 'seblyng/roslyn.nvim',
     { src = gh 'saghen/blink.cmp', version = vim.version.range '1.*' },
   }
 
   -- Automatically install LSPs and related tools to stdpath for Neovim
-  require('mason').setup {}
+  require('mason').setup {
+    registries = {
+      'github:mason-org/mason-registry',
+      'github:Crashdummyy/mason-registry',
+    },
+  }
 
   -- Ensure the servers and tools above are installed
   --
@@ -769,6 +775,7 @@ do
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
     -- You can add other tools here that you want Mason to install
+    'roslyn',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -778,6 +785,21 @@ do
     vim.lsp.config(name, server)
     vim.lsp.enable(name)
   end
+
+  vim.lsp.config('roslyn', {
+    capabilities = require('blink.cmp').get_lsp_capabilities(),
+    settings = {
+      ['csharp|background_analysis'] = {
+        dotnet_analyzer_diagnostics_scope = 'fullSolution',
+        dotnet_compiler_diagnostics_scope = 'fullSolution',
+      },
+      ['csharp|symbol_search'] = {
+        dotnet_search_reference_assemblies = true,
+      },
+    },
+  })
+
+  require('roslyn').setup { broad_search = true }
 end
 
 -- ============================================================
